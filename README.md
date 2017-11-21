@@ -1,6 +1,6 @@
 ### Training TensorFlow CNN Model with Food-101 dataset on Kubernetes Cluster
 
-Setup dev environment on mac os:
+Setup TensorFlow/Keras and OpenCV for Python 3 dev environment on mac os:
 
 ```bash
 $ sudo xcodebuild -license
