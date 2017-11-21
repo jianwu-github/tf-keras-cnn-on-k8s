@@ -1,4 +1,4 @@
-### Training TensorFlow CNN Model with Food-101 dataset on Kubernetes Cluster
+### Training TensorFlow/Keras CNN Model with image datasets like dogs-vs-cats and Food-101 on Kubernetes Cluster
 
 Setup TensorFlow/Keras and OpenCV for Python 3 dev environment on mac os:
 
@@ -31,3 +31,7 @@ $ sudo pip3 install numpy scipy matplotlib scikit-learn pandas ipython
 
 $ sudo pip3 install --upgrade https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.4.0-py3-none-any.whl
 ```
+
+Prepare image data for training and validation:
+
+> unzip train.zip and validation.zip under data directory
