@@ -1,9 +1,11 @@
+import argparse
+
 import tensorflow as tf
-from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.python.keras.models import Sequential
-from tensorflow.python.keras.layers import Conv2D, MaxPooling2D
-from tensorflow.python.keras.layers import Activation, Dropout, Flatten, Dense
-from tensorflow.python.keras import backend as K
+from keras.preprocessing.image import ImageDataGenerator
+from keras.layers import Conv2D, MaxPooling2D, Input
+from keras.layers import Dropout, Flatten, Dense
+from keras.models import Model
+from keras import backend as K
 
 # dimensions of dogs-vs-cats images
 img_width  = 150
@@ -18,27 +20,31 @@ DEFAULT_NB_VALIDATION_SAMPLES = 800
 
 
 def build_cnn_model(sample_shape):
-    cnn_model = Sequential(name="cnn_model")
+    """
+    Building CNN Model using Keras 2 Functional API
 
-    cnn_model.add(Conv2D(32, (3, 3), input_shape=sample_shape))
-    cnn_model.add(Activation('relu'))
-    cnn_model.add(MaxPooling2D(pool_size=(2, 2)))
+    :param sample_shape:
+    :return: keras cnn model
+    """
 
-    cnn_model.add(Conv2D(32, (3, 3)))
-    cnn_model.add(Activation('relu'))
-    cnn_model.add(MaxPooling2D(pool_size=(2, 2)))
+    input_image = Input(shape=sample_shape)
 
-    cnn_model.add(Conv2D(64, (3, 3)))
-    cnn_model.add(Activation('relu'))
-    cnn_model(MaxPooling2D(pool_size=(2, 2)))
+    conv_1 = Conv2D(32, (3, 3), activation='relu')(input_image)
+    pool_1 = MaxPooling2D((2, 2))(conv_1)
 
-    cnn_model.add(Flatten())
-    cnn_model.add(Dense(64))
-    cnn_model.add(Activation('relu'))
-    cnn_model.add(Dropout(0.5))
+    conv_2 = Conv2D(32, (3, 3), activation='relu')(pool_1)
+    pool_2 = MaxPooling2D((2, 2))(conv_2)
 
-    cnn_model.add(Dense(1))
-    cnn_model.add(Activation('sigmoid'))
+    conv_3 = Conv2D(64, (3, 3), activation='relu')(pool_2)
+    pool_3 = MaxPooling2D((2, 2))(conv_3)
+
+    flatten = Flatten()(pool_3)
+    dense = Dense(64, activation='relu')(flatten)
+    dropout = Dropout(0.5)(dense)
+
+    prediction = Dense(1, activation='sigmoid')(dropout)
+
+    cnn_model = Model(inputs=input_image, outputs=prediction)
 
     cnn_model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
@@ -75,16 +81,24 @@ def train_cnn_model(train_data_dir, nb_train_samples,
         validation_data=validation_generator,
         validation_steps=validation_steps)
 
-    cnn_model.save("model/cnn_model")
+    cnn_model.save("model/cnn_model.h5")
 
+
+parser = argparse.ArgumentParser(description="Training Keras CNN Dog-vs-Cat Image Classifier")
+parser.add_argument('-ep', dest="epochs", type=int, default=10, help="Number of epochs")
+parser.add_argument('-bs', dest="batch_size", type=int, default=16, help="Batch Size")
 
 if __name__ == '__main__':
+    parsed_args = parser.parse_args()
+
+    epochs = parsed_args.epochs
+    batch_size = parsed_args.batch_size
     train_data_dir = DEFAULT_TRAIN_DATA_DIR
     nb_train_samples = DEFAULT_NB_TRAIN_SAMPLES
     validation_data_dir = DEFAULT_VALIDATION_DATA_DIR
     nb_validation_samples = DEFAULT_NB_VALIDATION_SAMPLES
-    epochs = 50
-    batch_size = 16
+
+    tf.logging.set_verbosity(tf.logging.INFO)
 
     train_cnn_model(train_data_dir, nb_train_samples,
                     validation_data_dir, nb_validation_samples,
