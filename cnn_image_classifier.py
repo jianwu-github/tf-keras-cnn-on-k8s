@@ -6,6 +6,7 @@ from keras.layers import Conv2D, MaxPooling2D, Input
 from keras.layers import Dropout, Flatten, Dense
 from keras.models import Model
 from keras import backend as K
+from keras.callbacks import TensorBoard
 
 # dimensions of dogs-vs-cats images
 img_width  = 150
@@ -72,6 +73,8 @@ def train_cnn_model(train_data_dir, nb_train_samples,
     train_steps = nb_train_samples // batch_size
     validation_steps = nb_validation_samples // batch_size
 
+    tensorboard = TensorBoard(log_dir="summary_logs")
+
     cnn_model = build_cnn_model(input_shape)
 
     cnn_model.fit_generator(
@@ -79,7 +82,8 @@ def train_cnn_model(train_data_dir, nb_train_samples,
         steps_per_epoch=train_steps,
         epochs=epochs,
         validation_data=validation_generator,
-        validation_steps=validation_steps)
+        validation_steps=validation_steps,
+        callbacks=[tensorboard])
 
     cnn_model.save("model/cnn_model.h5")
 
@@ -103,5 +107,3 @@ if __name__ == '__main__':
     train_cnn_model(train_data_dir, nb_train_samples,
                     validation_data_dir, nb_validation_samples,
                     batch_size, epochs)
-
-
