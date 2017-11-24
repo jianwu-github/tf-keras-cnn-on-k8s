@@ -40,10 +40,10 @@ Prepare image data for training and validation:
 
 > unzip train.zip and validation.zip under data directory
 
-To run cnn_image_classifier through command line:
+To run keras_cnn_image_classifier through command line:
 
 ```bash
-$ python3 cnn_image_classifier.py -ep 5 -bs 16
+$ python3 keras_cnn_image_classifier.py -ep 5 -bs 16
 Using TensorFlow backend.
 Found 2000 images belonging to 2 classes.
 Found 800 images belonging to 2 classes.
