@@ -60,3 +60,35 @@ Epoch 5/5
 125/125 [==============================] - 56s 449ms/step - loss: 0.5727 - acc: 0.6995 - val_loss: 0.5359 - val_acc: 0.7412
 
 ```
+
+To run tf_cnn_image_classifier through command line:
+
+```bash
+$ python3 tf_cnn_image_classifier.py -ep 5 -bs 30
+[None, 17, 17, 32]
+2017-11-27 12:17:14.719266: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+At 0th epoch: ======================================================
+    At 32th step, the cost for training samples is 0.6041718125343323
+    At 64th step, the cost for training samples is 0.691839873790741
+    the cost for validation samples is 0.6904814839363098
+
+At 1th epoch: ======================================================
+    At 32th step, the cost for training samples is 0.6702802777290344
+    At 64th step, the cost for training samples is 0.5561310648918152
+    the cost for validation samples is 0.658843994140625
+
+At 2th epoch: ======================================================
+    At 32th step, the cost for training samples is 0.7262727618217468
+    At 64th step, the cost for training samples is 0.3656562268733978
+    the cost for validation samples is 0.7333311438560486
+
+At 3th epoch: ======================================================
+    At 32th step, the cost for training samples is 0.45142433047294617
+    At 64th step, the cost for training samples is 0.15599210560321808
+    the cost for validation samples is 0.670315682888031
+
+At 4th epoch: ======================================================
+    At 32th step, the cost for training samples is 0.4887373149394989
+    At 64th step, the cost for training samples is 0.11935045570135117
+    the cost for validation samples is 0.9625208973884583
+```

@@ -1,4 +1,5 @@
 import argparse
+import pprint
 
 import numpy as np
 import tensorflow as tf
@@ -9,7 +10,7 @@ from image_data_pipeline import ImageDataPipeline
 img_width  = 150
 img_height = 150
 
-input_shape = (img_width, img_height, 1)
+input_shape = (img_width, img_height, 3)
 
 DEFAULT_TRAIN_DATA_DIR = "data/train"
 DEFAULT_NB_TRAIN_SAMPLES = 2000
@@ -25,32 +26,26 @@ def init_weights(shape):
 
 
 def build_cnn_model(x_input):
-    #conv1
-    w = init_weights([3, 3, 1, 32])  # 3x3x1 conv, 32 outputs
-    conv1 = tf.nn.conv2d(x_input, w, strides=[1, 1, 1, 1], padding='VALID')
-    conv1_a = tf.nn.relu(conv1)
-    pool1 = tf.nn.max_pool(conv1_a, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
+    conv1 = tf.layers.conv2d(inputs=x_input, filters=32, kernel_size=[3, 3], padding="valid", activation=tf.nn.relu)
+    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=[2, 2])
 
-    #conv2
-    w2 = init_weights([1, 74, 74, 32])  # 3x3x1 conv, 32 outputs
-    conv2 = tf.nn.conv2d(pool1, w2, strides=[1, 1, 1, 1], padding='VALID')
-    conv2_a = tf.nn.relu(conv2)
-    pool2 = tf.nn.max_pool(conv2_a, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
+    conv2 = tf.layers.conv2d(inputs=pool1, filters=32, kernel_size=[3, 3], padding="valid", activation=tf.nn.relu)
+    pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=[2, 2])
 
-    # conv3
-    w3 = init_weights([3, 3, 1, 64])  # 3x3x1 conv, 64 outputs
-    conv3 = tf.nn.conv2d(pool2, w3, strides=[1, 1, 1, 1], padding='VALID')
-    conv3_a = tf.nn.relu(conv3)
-    pool3 = tf.nn.max_pool(conv3_a, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
+    conv3 = tf.layers.conv2d(inputs=pool2, filters=32, kernel_size=[3, 3], padding="valid", activation=tf.nn.relu)
+    pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2, 2], strides=[2, 2])
 
-    # flattern
+    #flattern
     shape = pool3.get_shape().as_list()
-    flat = tf.reshape(pool3, [shape[0], shape[1] * shape[2] * shape[3]])
+    pprint.pprint(shape)
 
-    # output
-    w4 = init_weights([shape[1] * shape[2] * shape[3], 2])
+    pool3_flat = tf.reshape(pool3, [-1, shape[1] * shape[2] * shape[3]])
 
-    output = tf.matmul(flat, w4)
+    dense = tf.layers.dense(inputs=pool3_flat, units=64, activation=tf.nn.relu)
+
+    dropout = tf.layers.dropout(inputs=dense, rate=0.5)
+
+    output = tf.layers.dense(inputs=dropout, units=2)
 
     return output
 
@@ -58,7 +53,7 @@ def build_cnn_model(x_input):
 def train_cnn_model(epochs, batch_size):
     tf.reset_default_graph()
 
-    x_input = tf.placeholder("float", [None, img_width, img_height, 1])
+    x_input = tf.placeholder("float", [None, img_width, img_height, 3])
     y_label = tf.placeholder("float", [None, 2])
 
     global_step = tf.train.get_or_create_global_step()
@@ -80,18 +75,21 @@ def train_cnn_model(epochs, batch_size):
     with tf.Session() as sess:
         sess.run(init_op)
 
+        validation_images, validation_labels = image_data_pipeline.get_validation_image_samples((img_width, img_height), batch_size)
+
         for e in range(epochs):
-
-            min_cost = MAX_FLOAT_VAL
+            print("At {}th epoch: ======================================================".format(e))
             for b in range(n_batch):
-                images, labels = image_data_pipeline.get_next_image_batch((img_width, img_height), batch_size)
+                images, labels = image_data_pipeline.get_next_train_image_batch((img_width, img_height), batch_size)
 
-                cost = sess.run(train_op, feed_dict={x_input: images, y_label: labels})
+                sess.run(train_op, feed_dict={x_input: images, y_label: labels})
 
-                if min_cost < cost:
-                    min_cost = cost
+                if b > 0 and b % 32 == 0:
+                    train_cost_val = sess.run(cost, feed_dict={x_input: images, y_label: labels})
+                    print("    At {}th step, the cost for training samples is {}".format(b, train_cost_val))
 
-            print("Min Cost for {} epoch: {}".format(e, min_cost))
+            validation_cost_val = sess.run(cost, feed_dict={x_input: validation_images, y_label: validation_labels})
+            print("    the cost for validation samples is {}\n".format(validation_cost_val))
 
 
 parser = argparse.ArgumentParser(description="Training TensorFlow CNN Dog-vs-Cat Image Classifier")
