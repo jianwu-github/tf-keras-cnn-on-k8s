@@ -2,5 +2,6 @@ numpy
 scipy
 pandas
 h5py
+opencv-python
 tensorflow
 keras
