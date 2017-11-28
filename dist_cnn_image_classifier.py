@@ -1,20 +1,13 @@
-import time
-
 import tensorflow as tf
-import keras
 
-from keras.preprocessing.image import ImageDataGenerator
-from keras.layers import Conv2D, MaxPooling2D, Input
-from keras.layers import Dropout, Flatten, Dense
-from keras.models import Model
-from keras import backend as K
+from image_data_pipeline import ImageDataPipeline
 
 # DEFAULT GLOBAL PARAMETERS
 # dimensions of dogs-vs-cats images
 img_width = 150
 img_height = 150
 
-input_shape = (img_width, img_height, 3) if K.image_data_format() == 'channels_last' else (3, img_width, img_height)
+input_shape = (img_width, img_height, 3)
 
 DEFAULT_TRAIN_LOG_DIR = "train_logs"
 DEFAULT_SUMMARY_LOG_DIR = "summary_logs"
@@ -25,39 +18,41 @@ DEFAULT_VALIDATION_DATA_DIR = "data/validation"
 DEFAULT_NB_VALIDATION_SAMPLES = 800
 
 # Configurations
-DEFAULT_BATCH_SIZE = 15
-DEFAULT_EPOCHS = 50
+DEFAULT_BATCH_SIZE = 30
+DEFAULT_EPOCHS = 10
 DEFAULT_LEARNING_RATE = 0.0005
 
 
-def build_cnn_model(sample_shape):
-    """
-    Building CNN Model using Keras 2 Functional API
+def init_weights(shape):
+    return tf.Variable(tf.random_normal(shape, stddev=0.01))
 
-    :param sample_shape:
-    :return: keras cnn model
-    """
 
-    input_image = Input(shape=sample_shape)
+def build_cnn_model(x_input):
+    # conv layer 1
+    conv1 = tf.layers.conv2d(inputs=x_input, filters=32, kernel_size=[3, 3], padding="valid", activation=tf.nn.relu)
+    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=[2, 2])
 
-    conv_1 = Conv2D(32, (3, 3), activation='relu')(input_image)
-    pool_1 = MaxPooling2D((2, 2))(conv_1)
+    # conv layer 2
+    conv2 = tf.layers.conv2d(inputs=pool1, filters=32, kernel_size=[3, 3], padding="valid", activation=tf.nn.relu)
+    pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=[2, 2])
 
-    conv_2 = Conv2D(32, (3, 3), activation='relu')(pool_1)
-    pool_2 = MaxPooling2D((2, 2))(conv_2)
+    # conv layer 3
+    conv3 = tf.layers.conv2d(inputs=pool2, filters=32, kernel_size=[3, 3], padding="valid", activation=tf.nn.relu)
+    pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2, 2], strides=[2, 2])
 
-    conv_3 = Conv2D(64, (3, 3), activation='relu')(pool_2)
-    pool_3 = MaxPooling2D((2, 2))(conv_3)
+    # flattern
+    shape = pool3.get_shape().as_list()
+    # pprint.pprint(shape)
 
-    flatten = Flatten()(pool_3)
-    dense = Dense(64, activation='relu')(flatten)
-    dropout = Dropout(0.5)(dense)
+    pool3_flat = tf.reshape(pool3, [-1, shape[1] * shape[2] * shape[3]])
 
-    prediction = Dense(1, activation='sigmoid')(dropout)
+    dense = tf.layers.dense(inputs=pool3_flat, units=64, activation=tf.nn.relu)
 
-    cnn_model = Model(inputs=input_image, outputs=prediction)
+    dropout = tf.layers.dropout(inputs=dense, rate=0.5)
 
-    return cnn_model
+    output = tf.layers.dense(inputs=dropout, units=2)
+
+    return output
 
 
 # Define parameters
@@ -71,8 +66,6 @@ tf.app.flags.DEFINE_string("worker_hosts", "",
                            "Comma-separated list of hostname:port pairs")
 tf.app.flags.DEFINE_string("job_name", "", "One of 'ps', 'worker'")
 tf.app.flags.DEFINE_string("task_index", "0", "Index of task within the job")
-# tf.app.flags.DEFINE_string("log_path", "train_logs", "Log path")
-# tf.app.flags.DEFINE_string("data_dir", "data", "Data dir path")
 tf.app.flags.DEFINE_boolean("sync_flag", "false", "synchronized training")  # default to false instead of true
 tf.app.flags.DEFINE_string("init_wait", "10", "worker initial wait for sync sessions")
 
@@ -85,10 +78,10 @@ def main(_):
 
     synchronized_training = FLAGS.sync_flag
 
+    tf.reset_default_graph()
+
     cluster = tf.train.ClusterSpec({"ps": ps_hosts, "worker": worker_hosts})
-    server = tf.train.Server(cluster,
-                             job_name=FLAGS.job_name,
-                             task_index=task_index)
+    server = tf.train.Server(cluster, job_name=FLAGS.job_name, task_index=task_index)
 
     if FLAGS.job_name == "ps":
         print("Parameter Server is started and ready ...")
@@ -97,86 +90,35 @@ def main(_):
         # To setup summary logs for chief worker
         is_chief = task_index == 0
 
-        # [Between Graph Data Parallelism]
-        # Prepare training data for each worker assuming each worker has its own local data directory to process
-        train_datagen = ImageDataGenerator(rescale=(1.0 / 255), shear_range=0.2, zoom_range=0.2, horizontal_flip=True)
-        validation_datagen = ImageDataGenerator(rescale=(1.0 / 255))
-
-        train_generator = train_datagen.flow_from_directory(
-            DEFAULT_TRAIN_DATA_DIR,
-            target_size=(img_width, img_height),
-            batch_size=DEFAULT_BATCH_SIZE,
-            class_mode='binary')
-
-        validation_generator = validation_datagen.flow_from_directory(
-            DEFAULT_VALIDATION_DATA_DIR,
-            target_size=(img_width, img_height),
-            batch_size=DEFAULT_BATCH_SIZE,
-            class_mode='binary')
-
-        train_steps = DEFAULT_NB_TRAIN_SAMPLES // DEFAULT_BATCH_SIZE
-        validation_steps = DEFAULT_NB_VALIDATION_SAMPLES // DEFAULT_BATCH_SIZE
-
         # Assigns ops to the local worker by default.
         with tf.device(tf.train.replica_device_setter(
                 worker_device="/job:worker/task:%d" % int(FLAGS.task_index),
                 cluster=cluster)):
-            # set Keras learning phase to train
-            K.set_learning_phase(1)
-            # do not initialize variables on the fly
-            K.manual_variable_initialization(True)
-
-            # Build Keras model
-            model = build_cnn_model(input_shape)
-
-            predictions = model.output
-            targets = tf.placeholder(tf.float32, shape=None)
-
-            # xent_loss = tf.reduce_mean(keras.losses.binary_crossentropy(targets, predictions))
-            #
-            # # apply regularizers if any
-            # if model.regularizers:
-            #     total_loss = xent_loss * 1.  # copy tensor
-            #     for regularizer in model.regularizers:
-            #         total_loss = regularizer(total_loss)
-            # else:
-            #     total_loss = xent_loss
-            total_loss = tf.reduce_mean(keras.losses.binary_crossentropy(targets, predictions))
+            x_input = tf.placeholder("float", [None, img_width, img_height, 3])
+            y_label = tf.placeholder("float", [None, 2])
 
             # we create a global_step tensor for distributed training
             # (a counter of iterations)
             global_step = tf.train.get_or_create_global_step()
 
-            # set up TF optimizer
+            cnn_model = build_cnn_model(x_input)
+
+            loss = tf.nn.softmax_cross_entropy_with_logits(logits=cnn_model, labels=y_label)
+            cost = tf.reduce_mean(loss)
+
             optimizer = tf.train.RMSPropOptimizer(learning_rate=DEFAULT_LEARNING_RATE, decay=0.9, epsilon=1e-8)
-
-            # Set up model update ops (batch norm ops).
-            # The gradients should only be computed after updating the moving average
-            # of the batch normalization parameters, in order to prevent a data race
-            # between the parameter updates and moving average computations.
-            with tf.control_dependencies(model.updates):
-                barrier = tf.no_op(name='update_barrier')
-
-            # define gradient updates
-            with tf.control_dependencies([barrier]):
-                grads = optimizer.compute_gradients(
-                    total_loss,
-                    model.trainable_weights,
-                    gate_gradients=tf.train.Optimizer.GATE_OP,
-                    aggregation_method=None,
-                    colocate_gradients_with_ops=False)
-
-                grad_updates = optimizer.apply_gradients(grads, global_step=global_step)
-
-            # define train tensor
-            with tf.control_dependencies([grad_updates]):
-                train_op = tf.identity(total_loss, name="train")
-
-            # The StopAtStepHook handles stopping after running given steps.
-            # hooks = [tf.train.StopAtStepHook(last_step=DEFAULT_TRAINING_STEPS)]
-            hooks = None
+            train_op = optimizer.minimize(cost, global_step=global_step)
 
             init_op = tf.global_variables_initializer()
+
+            epochs = DEFAULT_EPOCHS
+            batch_size = DEFAULT_BATCH_SIZE
+
+            n_batch = int(DEFAULT_NB_TRAIN_SAMPLES / batch_size)
+
+            # [Between Graph Data Parallelism]
+            # Prepare training data for each worker assuming each worker has its own local data directory to process
+            image_data_pipeline = ImageDataPipeline()
 
             config = tf.ConfigProto(device_filters=['/job:ps', '/job:worker/task:%d' % int(FLAGS.task_index)])
 
@@ -185,45 +127,37 @@ def main(_):
             # or an error occurs.
             with tf.train.MonitoredTrainingSession(master=server.target,
                                                    config=config,
-                                                   is_chief=(int(FLAGS.task_index) == 0 and (FLAGS.job_name == 'worker')),
-                                                   # is_chief=is_chief,
-                                                   checkpoint_dir="train_logs",
-                                                   hooks=hooks) as mon_sess:
-
+                                                   is_chief=(int(FLAGS.task_index) == 0 and
+                                                            (FLAGS.job_name == 'worker')),
+                                                   checkpoint_dir="train_logs") as mon_sess:
                 # if is_chief:
                 #     print("Chief Worker initialize all variables ...")
                 #     mon_sess.run(init_op)
                 # else:
                 #     time.sleep(10)
 
-                for e in range(DEFAULT_EPOCHS):
-                    print("run {} epoch".format(e))
+                validation_images, validation_labels = image_data_pipeline.get_validation_image_samples(
+                                                                                (img_width, img_height),
+                                                                                batch_size)
 
-                    # Training
-                    curr_train_step = 0
-                    for x_batch, y_batch in train_datagen.flow_from_directory(DEFAULT_TRAIN_DATA_DIR,
-                                                                              target_size=(img_width, img_height),
-                                                                              batch_size=DEFAULT_BATCH_SIZE,
-                                                                              class_mode='binary'):
+                for e in range(epochs):
+                    print("At {}th epoch: ======================================================".format(e))
 
-                        loss = mon_sess.run(train_op, feed_dict={model.inputs[0]: x_batch, targets: y_batch})
+                    for b in range(n_batch):
+                        images, labels = image_data_pipeline.get_next_train_image_batch(
+                                                                    (img_width, img_height),
+                                                                    batch_size)
 
-                        if curr_train_step % 40 == 0:
-                            print("At {} epoch {} step, loss: {}".format(e, curr_train_step, loss))
+                        mon_sess.run(train_op, feed_dict={x_input: images, y_label: labels})
 
-                        curr_train_step += 1
-                        if curr_train_step >= train_steps:
-                            break
+                        if b > 0 and b % 32 == 0:
+                            train_cost_val = mon_sess.run(cost, feed_dict={x_input: images, y_label: labels})
+                            print("    At {}th step, the cost for training samples is {}".format(b, train_cost_val))
 
-                    # # Using Validation Data to check
-                    # validation_data, validation_labels = validation_datagen.flow_from_directory(DEFAULT_VALIDATION_DATA_DIR,
-                    #                                                                             target_size=(img_width, img_height),
-                    #                                                                             batch_size=DEFAULT_NB_VALIDATION_SAMPLES,
-                    #                                                                             class_mode='binary')
-                    #
-                    # total_loss = mon_sess.run(total_loss, feed_dict={model.inputs[0]: validation_data, targets: validation_labels})
-                    #
-                    # print("At {} epoch, total loss on validation data set: {}".format(e, total_loss))
+                    validation_cost_val = mon_sess.run(cost, feed_dict={x_input: validation_images,
+                                                                        y_label: validation_labels})
+
+                    print("    the cost for validation samples is {}\n".format(validation_cost_val))
 
             print("Training worker {} done!".format(task_index))
 
