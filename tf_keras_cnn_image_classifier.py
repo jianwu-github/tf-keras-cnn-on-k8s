@@ -1,12 +1,13 @@
 import argparse
+import gc
 
 import tensorflow as tf
-from keras.preprocessing.image import ImageDataGenerator
-from keras.layers import Conv2D, MaxPooling2D, Input
-from keras.layers import Dropout, Flatten, Dense
-from keras.models import Model
-from keras import backend as K
-from keras.callbacks import TensorBoard
+from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Input
+from tensorflow.python.keras.layers import Dropout, Flatten, Dense
+from tensorflow.python.keras.models import Model
+from tensorflow.python.keras import backend as K
+from tensorflow.python.keras.callbacks import TensorBoard
 
 # dimensions of dogs-vs-cats images
 img_width  = 150
@@ -104,6 +105,11 @@ if __name__ == '__main__':
 
     tf.logging.set_verbosity(tf.logging.INFO)
 
+    tf.reset_default_graph()
+
     train_cnn_model(train_data_dir, nb_train_samples,
                     validation_data_dir, nb_validation_samples,
                     batch_size, epochs)
+
+    # https://github.com/tensorflow/tensorflow/issues/3388
+    K.clear_session()
