@@ -57,7 +57,7 @@ def train_cnn_model(train_data_dir, nb_train_samples,
                     validation_data_dir, nb_validation_samples,
                     batch_size, epochs):
     train_datagen = ImageDataGenerator(rescale=(1.0 / 255), shear_range=0.2, zoom_range=0.2, horizontal_flip=True)
-    test_datagen = ImageDataGenerator(rescale=(1.0 / 255))
+    validation_datagen = ImageDataGenerator(rescale=(1.0 / 255))
 
     train_generator = train_datagen.flow_from_directory(
         train_data_dir,
@@ -65,7 +65,7 @@ def train_cnn_model(train_data_dir, nb_train_samples,
         batch_size=batch_size,
         class_mode='binary')
 
-    validation_generator = test_datagen.flow_from_directory(
+    validation_generator = validation_datagen.flow_from_directory(
         validation_data_dir,
         target_size=(img_width, img_height),
         batch_size=batch_size,
