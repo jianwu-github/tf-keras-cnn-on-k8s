@@ -43,22 +43,34 @@ Prepare image data for training and validation:
 To run tf_keras_cnn_image_classifier through command line:
 
 ```bash
-$ python3 tf_keras_cnn_image_classifier.py -ep 5 -bs 16
-Using TensorFlow backend.
+$ $ python3 tf_keras_cnn_image_classifier.py -ep 10 -bs 20
+Training Keras CNN Image Classifier: ==================================
+  Training Data Dir:   data/train
+  Validation Data Dir: data/validation
+  Categories/Labels:   ['cats', 'dogs']
 Found 2000 images belonging to 2 classes.
 Found 800 images belonging to 2 classes.
-Epoch 1/5
-2017-11-22 11:21:09.881558: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-125/125 [==============================] - 51s 412ms/step - loss: 0.7084 - acc: 0.5305 - val_loss: 0.6821 - val_acc: 0.5150
-Epoch 2/5
-125/125 [==============================] - 54s 431ms/step - loss: 0.6646 - acc: 0.5910 - val_loss: 0.6385 - val_acc: 0.6338
-Epoch 3/5
-125/125 [==============================] - 65s 522ms/step - loss: 0.6404 - acc: 0.6520 - val_loss: 0.5794 - val_acc: 0.6813
-Epoch 4/5
-125/125 [==============================] - 61s 485ms/step - loss: 0.6044 - acc: 0.6685 - val_loss: 0.6015 - val_acc: 0.6613
-Epoch 5/5
-125/125 [==============================] - 56s 449ms/step - loss: 0.5727 - acc: 0.6995 - val_loss: 0.5359 - val_acc: 0.7412
-
+2017-12-01 22:24:20.710246: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+Epoch 1/10
+100/100 [==============================] - 56s - loss: 0.7421 - acc: 0.5150 - val_loss: 0.6775 - val_acc: 0.5025
+Epoch 2/10
+100/100 [==============================] - 59s - loss: 0.6748 - acc: 0.6030 - val_loss: 0.6287 - val_acc: 0.6475
+Epoch 3/10
+100/100 [==============================] - 50s - loss: 0.6252 - acc: 0.6465 - val_loss: 0.5667 - val_acc: 0.6900
+Epoch 4/10
+100/100 [==============================] - 50s - loss: 0.5944 - acc: 0.6910 - val_loss: 0.5886 - val_acc: 0.6700
+Epoch 5/10
+100/100 [==============================] - 49s - loss: 0.5800 - acc: 0.7015 - val_loss: 0.5403 - val_acc: 0.7212
+Epoch 6/10
+100/100 [==============================] - 47s - loss: 0.5599 - acc: 0.7235 - val_loss: 0.9021 - val_acc: 0.5350
+Epoch 7/10
+100/100 [==============================] - 47s - loss: 0.5514 - acc: 0.7255 - val_loss: 0.5651 - val_acc: 0.6787
+Epoch 8/10
+100/100 [==============================] - 48s - loss: 0.5352 - acc: 0.7385 - val_loss: 0.5571 - val_acc: 0.7050
+Epoch 9/10
+100/100 [==============================] - 47s - loss: 0.5259 - acc: 0.7385 - val_loss: 0.5947 - val_acc: 0.6862
+Epoch 10/10
+100/100 [==============================] - 47s - loss: 0.5000 - acc: 0.7620 - val_loss: 0.4990 - val_acc: 0.7575
 ```
 
 To run tf_cnn_image_classifier through command line:
