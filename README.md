@@ -73,6 +73,28 @@ Epoch 10/10
 100/100 [==============================] - 47s - loss: 0.5000 - acc: 0.7620 - val_loss: 0.4990 - val_acc: 0.7575
 ```
 
+To test trained Keras CNN Model with test data under "data/test" directory, run tf_keras_cnn_image_predictor through command line:
+
+```bash
+$ python3 tf_keras_cnn_image_predictor.py
+2017-12-01 22:40:28.951190: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+
+Test Trained CNN Model with Dog Images: =======================
+ Predicted Probability of Dog Image is [ 0.65954769]
+ Predicted Probability of Dog Image is [ 0.99422461]
+ Predicted Probability of Dog Image is [ 0.29893339]
+ Predicted Probability of Dog Image is [ 0.73799419]
+ Predicted Probability of Dog Image is [ 0.99334794]
+
+Test Trained CNN Model with Cat Images: =======================
+ Predicted Probability of Dog Image is [ 0.12118033]
+ Predicted Probability of Dog Image is [ 0.0061747]
+ Predicted Probability of Dog Image is [ 0.0073453]
+ Predicted Probability of Dog Image is [ 0.45440799]
+ Predicted Probability of Dog Image is [ 0.60804558]
+ 
+```
+
 To run tf_cnn_image_classifier through command line:
 
 ```bash
