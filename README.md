@@ -99,7 +99,7 @@ Test Trained CNN Model with Cat Images: =======================
  
 ```
 
-#### Running tensorflow cnn image classifier on kebernetes cluster
+#### Running TensorFlow CNN image classifier on Kubernetes cluster
 
 To run tf_cnn_image_classifier through command line:
 
