@@ -57,7 +57,8 @@ def train_cnn_model(train_data_dir, nb_train_samples,
     train_steps = nb_train_samples // batch_size
     validation_steps = nb_validation_samples // batch_size
 
-    tensorboard = TensorBoard(log_dir="summary_logs")
+    tensorboard = TensorBoard(log_dir="summary_logs",
+                              write_graph=True)
 
     cnn_model = build_cnn_model(input_shape)
 
