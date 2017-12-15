@@ -2,7 +2,7 @@
 
 #### Buidling CNN image classifier with Keras
 
-[Learning Keras by building dogs-vs-cats image classifier](https://www.slideshare.net/jianwu/leaning-keras-by-building-dogs-vscats-image-classifier-84047793)
+[Learning Keras by building dogs-vs-cats image classifier](https://www.slideshare.net/jianwu/learning-keras-by-building-dogs-vscats-image-classifier/jianwu/learning-keras-by-building-dogs-vscats-image-classifier)
 
 Setup TensorFlow/Keras and OpenCV for Python 3 dev environment on mac os:
 
